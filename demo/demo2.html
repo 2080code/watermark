@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title></title>
+  <style>
+    body{
+        /* background:silver */
+        margin: 0;
+        padding: 0;
+        color: #333;
+    }
+    #picture{
+        display:inline-block
+    }
+    h1{
+        text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+    <div id="picture">
+        <img src="2.jpg" alt="">
+    </div>
+    
+    <script src="../watermark.js"></script>
+    <script>
+        const Watermarker=new WaterMark({
+            mode:'cover', // mat|cover，放置模式，默认 mat（cover模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失）
+            carrierElem:document.getElementById('picture'), // 水印层加载，默认在根元素（body）下
+            content:'角落里的水印',
+            fontSize:'30px',
+            fontColor:'black', // canvas fillStyle
+            opacity:0.25, // 默认 0.1
+            margin:30, // repeat 时每个水印的间距
+            position:'right bottom', // 水印位置（css background-position）
+            repeat:'no-repeat', // 水印铺设方式（css background-repeat）
+        })
+
+        Watermarker.draw()
+
+    </script>
+</body>
+
+</html>

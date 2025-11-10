@@ -1,0 +1,28 @@
+{
+  "name": "@2080code/watermark",
+  "version": "0.0.1",
+  "description": "给页面或HTML元素加SVG水印的JS库",
+  "main": "watermark.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2080code/watermark.git"
+  },
+  "keywords": [
+    "watermark",
+    "html",
+    "svg",
+    "js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Warren Chen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/2080code/watermark/issues"
+  },
+  "homepage": "https://github.com/2080code/watermark#readme"
+}
