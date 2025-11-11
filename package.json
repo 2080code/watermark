@@ -1,6 +1,6 @@
 {
   "name": "@2080code/watermark",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "给页面或HTML元素加SVG水印的JS库",
   "main": "watermark.js",
   "scripts": {
