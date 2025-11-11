@@ -40,7 +40,7 @@
         }
     
         options={
-            name:'cw-watermark',
+            name:'2080code-watermark',
             carrierElem:document.body,
             mode:'mat',
             zIndex:100000,
@@ -222,69 +222,82 @@
                 }
     
                 return {
+                    content,
+                    rotateDegree,
+                    margin,
                     width: canvas.width,
                     height: canvas.height,
                     contWidth,
                     contHeight,
                     txtProp,
                     fontStyle,
+                    fontColor,
+                    baseline,
+                    opacity,
+                    tuning
                 }
             }
             
-            function svgDraw(params){
-                let dataURL=''
-                let {x,y}={
-                    x:(params.width-margin)/2-params.contWidth/2,
-                    y:(params.height-margin)/2-params.contHeight/2
-                }
-                const rotateParams=[
-                    rotateDegree,
-                    x+params.contWidth/2,
-                    y+params.contHeight/2
-                ].join(',')
-                const svg=document.createElement('svg')
-                const text=document.createElement('text')
-        
-                // <svg>
-                svg.setAttribute('xmlns','http://www.w3.org/2000/svg')
-                svg.setAttribute('width',params.width)
-                svg.setAttribute('height',params.height)
-                svg.setAttribute('version','1.1')
-        
-                // <text>
-                text.innerText=content
-                text.style=[
-                    `font:${params.fontStyle}`,
-                    `fill:${fontColor}`,
-                    'text-anchor:start',
-                    `alignment-baseline:${baseline}`,
-                ].join('; ')
-                text.setAttribute('x',x+params.txtProp.actualBoundingBoxLeft) // svg 的 text 无法获取具体的文字渲染参数，利用 canvas 的 measureText 来修正对齐基准偏移
-                text.setAttribute('y',y+params.txtProp.actualBoundingBoxAscent)
-                text.setAttribute('transform',`rotate(${rotateParams})`)
-                text.setAttribute('opacity',opacity)
-        
-        
-                // if(tuning){
-                //     // <rect>
-                //     let rect=document.createElement('rect')
-                //     rect.setAttribute('x',x)
-                //     rect.setAttribute('y',y)
-                //     rect.setAttribute('width',params.contWidth)
-                //     rect.setAttribute('height',params.contHeight)
-                //     rect.setAttribute('fill','yellow')
-                //     rect.setAttribute('stroke','red')
-                //     rect.setAttribute('transform',`rotate(${rotateParams})`)
-                //     svg.append(rect)
-                // }
-        
-                svg.append(text)
-        
-                dataURL='data:image/svg+xml;base64,'+window.btoa(window.unescape(encodeURIComponent(svg.outerHTML)))
-                // console.log('svgDraw',svg,params,dataURL)
-                self.put(dataURL)
+            this.svgGenerate(draft())
+        }
+
+        /**
+         * 生成svg水印本体
+         * @param {*} params 水印参数
+         * @returns String 水印base64 dataURL
+         */
+        svgGenerate(params){
+            let dataURL=''
+            let {x,y}={
+                x:(params.width-params.margin)/2-params.contWidth/2,
+                y:(params.height-params.margin)/2-params.contHeight/2
             }
-            svgDraw(draft())
+            const rotateParams=[
+                params.rotateDegree,
+                x+params.contWidth/2,
+                y+params.contHeight/2
+            ].join(',')
+            const svg=document.createElement('svg')
+            const text=document.createElement('text')
+    
+            // <svg>
+            svg.setAttribute('xmlns','http://www.w3.org/2000/svg')
+            svg.setAttribute('width',params.width)
+            svg.setAttribute('height',params.height)
+            svg.setAttribute('version','1.1')
+    
+            // <text>
+            text.innerText=params.content
+            text.style=[
+                `font:${params.fontStyle}`,
+                `fill:${params.fontColor}`,
+                'text-anchor:start',
+                `alignment-baseline:${params.baseline}`,
+            ].join('; ')
+            text.setAttribute('x',x+params.txtProp.actualBoundingBoxLeft) // svg 的 text 无法获取具体的文字渲染参数，利用 canvas 的 measureText 来修正对齐基准偏移
+            text.setAttribute('y',y+params.txtProp.actualBoundingBoxAscent)
+            text.setAttribute('transform',`rotate(${rotateParams})`)
+            text.setAttribute('opacity',params.opacity)
+
+            // if(params.tuning){
+            //     // <rect>
+            //     let rect=document.createElement('rect')
+            //     rect.setAttribute('x',x)
+            //     rect.setAttribute('y',y)
+            //     rect.setAttribute('width',params.contWidth)
+            //     rect.setAttribute('height',params.contHeight)
+            //     rect.setAttribute('fill','yellow')
+            //     rect.setAttribute('stroke','red')
+            //     rect.setAttribute('transform',`rotate(${rotateParams})`)
+            //     svg.append(rect)
+            // }
+    
+            svg.append(text)
+    
+            dataURL='data:image/svg+xml;base64,'+window.btoa(window.unescape(encodeURIComponent(svg.outerHTML)))
+            // console.log('svgGenerate',svg,params,dataURL)
+            this.put(dataURL)
+            return dataURL
         }
     
         /**
