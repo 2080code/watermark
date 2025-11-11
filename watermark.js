@@ -12,6 +12,7 @@
  * @param {String} options.fontColor 字体颜色
  * @param {String} options.baseline 文本基线设置（svg text alignment-baseline）
  * @param {Number} options.rotateDegree 旋转角度
+ * @param {String} options.size 水印尺寸（css background-size）
  * @param {Number} options.margin 水印之间的外间距
  * @param {Number} options.padding 水印之间的内间距
  * @param {Boolean} options.needClip 是否裁切掉空白
@@ -19,7 +20,7 @@
  * @param {String} options.repeat 水印铺设方式（css background-repeat）
  * @param {Number} options.opacity 透明度，同时影响水印及调试层
  * @param {Boolean} options.tuning 调试模式开关，设为 true 会在水印下添加 canvas 画布生成的参照底图，能够观察到 margin、padding、rotateDegree、baseline 等参数的设置效果，方便调试。只支持在 cover 模式下开启。
- * @param {Boolean} options.demotion 降级处理，更好的兼容性。canvas 的 measureText 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 getComputedStyle 取代 canvas measureText 来完成基础绘制和尺寸的捕获。
+ * @param {Boolean} options.degraded 降级处理，更好的兼容性。canvas 的 measureText 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 getComputedStyle 取代 canvas measureText 来完成基础绘制和尺寸的捕获。
  * @example
  * // 基本使用
  * const waterMark=new WaterMark({
@@ -51,12 +52,13 @@
             fontColor:'rgba(0,0,0,1)',
             baseline:'before-edge',
             rotateDegree:0,
+            size:'auto',
             margin:0,
             padding:0,
             opacity:0.1,
             needClip:true,
             tuning:false,
-            demotion:false,
+            degraded:false,
             position:'center center',
             repeat:'repeat',
         }
@@ -70,12 +72,13 @@
                 fontColor,
                 baseline,
                 rotateDegree,
+                size,
                 margin,
                 padding,
                 opacity,
                 needClip,
                 tuning,
-                demotion,
+                degraded,
             }={...this.options,...options}
             const fontStyle=[fontWeight,fontSize,fontFamily].join(' ')
             const self=this
@@ -111,7 +114,7 @@
                     return size
                 }
                 let txtProp=null
-                if(demotion){
+                if(degraded){
                     txtProp=txtDom(content)
                 }else{
                     txtProp=setTxtProp(content)
@@ -323,8 +326,10 @@
                 'print-color-adjust:exact',
                 'color-adjust:exact',
                 `background-image:url(${imgURL})`, // 水印内容
-                `background-position:${this.options.position||'center center'}`,
-                `background-repeat:${this.options.repeat||'repeat'}`
+                `background-position:${this.options.position}`,
+                `background-repeat:${this.options.repeat}`,
+                `background-size:${this.options.size}`
+                
             ].join('!important;');
             
             if(this.options.mode==='cover'){

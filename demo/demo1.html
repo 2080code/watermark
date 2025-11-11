@@ -121,26 +121,22 @@
     <script src="../watermark.js"></script>
     <script>
         const Watermarker=new WaterMark({
-            mode:'cover', // mat|cover，放置模式，默认 mat（cover模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失）
-            // carrierElem:document.getElementById('article'), // 水印层加载，默认在根元素（body）下
+            mode:'cover',
             content:'西游记',
             fontFamily:'Microsoft YaHei',
             fontSize:'60px',
-            fontColor:'black', // canvas fillStyle
-            // baseline:'hanging', // 文本基线
-            opacity:0.15, // 默认 0.1
-            rotateDegree:-30, // 旋转角度
-            margin:0, // repeat 时每个水印的间距
-            padding:50, // 每个水印自身的内边距
-            needClip:false, // 是否裁切掉空白，默认true
-            position:'center center', // 水印位置（css background-position）
-            // repeat:'no-repeat', // 水印铺设方式（css background-repeat）
-            // tuning:true // 调试模式
+            fontColor:'black',
+            opacity:0.15,
+            rotateDegree:-30,
+            margin:0,
+            padding:50,
+            needClip:false,
+            position:'center center',
         })
 
         Watermarker.draw({
-            tuning:true, // 调试模式
-            demotion:true, // 降级模式
+            degraded:true,
+            tuning:true
         })
 
     </script>
