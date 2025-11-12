@@ -31,7 +31,7 @@
         <img class="picture" src="2.jpg" alt="">
     </div>
     
-    <script src="../watermark.js"></script>
+    <script src="../lib/watermark.umd.js"></script>
     <script>
         const Watermarker=new WaterMark({
             mode:'cover',
@@ -41,6 +41,7 @@
             fontColor:'black',
             opacity:0.25,
             margin:30,
+            size:'30% auto',
             position:'right bottom',
             repeat:'no-repeat',
         })
