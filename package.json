@@ -1,13 +1,13 @@
 {
   "name": "@2080code/watermark",
-  "version": "0.0.6",
-  "description": "给页面或HTML元素加SVG水印的JS库",
+  "version": "0.0.7",
+  "description": "基于 CSS 的 background 给HTML元素添加 SVG 文字水印",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "publish": "npm run build && npm public",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "npm-publish": "npm run build && npm publish"
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,9 @@
     "watermark",
     "html",
     "svg",
-    "js"
+    "js",
+    "css",
+    "canvas"
   ],
   "publishConfig": {
     "access": "public"

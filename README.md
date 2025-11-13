@@ -1,6 +1,7 @@
 # @2080code/watermark
 ![NPM Version](https://img.shields.io/npm/v/%402080code%2Fwatermark?label=NPM%20Version)
 ![npm package minimized gzipped size](https://img.shields.io/bundlejs/size/%402080code%2Fwatermark?format=both&label=NPM%20Package%20Size)
+![NPM Last Update](https://img.shields.io/npm/last-update/%402080code%2Fwatermark?label=NPM%20Last%20Update)
 ![NPM Downloads](https://img.shields.io/npm/dw/%402080code%2Fwatermark?label=NPM%20Downloads)
 
 
