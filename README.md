@@ -54,7 +54,7 @@ new WaterMark(options)
 `zIndex` | Number | `1000000` | 水印层（css z-index）
 `mode` | String （`'mat'\|'cover'`）| `'mat'` | 水印放置模式，默认 `mat`，铺设在目标层底部；<br/>`cover` 模式会创建一个层，并覆盖在载体上。<br/>*cover 模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失*
 `content` | String | `''` | 水印文字内容
-`url` | String | `''` | 水印资源，与 content 互斥
+`url` | String | `''` | 水印资源，与 content 互斥<br/>*暂时不支持`margin`、`padding`、`rotateDegree`及字体等相关设置项*
 `fontFamily` | String | `'Hei'` | 字体名
 `fontWeight` | String | `'normal'` | 字体粗细
 `fontSize` | String | `'16px'` | 字体大小
@@ -74,6 +74,7 @@ new WaterMark(options)
 
 ## 效果
 ### 生产效果
-![水印效果](./demo/preview.png)
+![水印效果](./demo/preview1.png)
 ### 调试效果
-![调试](./demo/1.png)
+![调试](./demo/preview2.png)
+

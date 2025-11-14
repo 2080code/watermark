@@ -33,6 +33,328 @@ import { WaterMarkOptions,SketchOptions } from './types'
  * waterMark.draw()
  */
 
+
+/**
+ * 生成水印草图，svg会据此生成水印
+ * @param {WaterMarkOptions} options 配置项
+ * @returns {SketchOptions} sketch 信息
+ */
+function draft(options:WaterMarkOptions):SketchOptions{
+    const {
+        content,
+        fontWeight,
+        fontSize,
+        fontFamily,
+        rotateDegree,
+        margin,
+        padding,
+        opacity,
+        needClip,
+        tuning,
+        degraded,
+    }=options
+
+    const fontStyle=[fontWeight,fontSize,fontFamily].join(' ')
+    const canvas = document.createElement('canvas'); // 创建canvas元素
+    const ctx:CanvasRenderingContext2D=canvas.getContext('2d')!;
+
+    function setTxtProp(txt:string):TextMetrics{
+        ctx.font=fontStyle;
+        ctx.fillStyle = 'red';
+        ctx.textAlign='start';
+        ctx.textBaseline = 'top';
+        return ctx.measureText(txt);
+    }
+    function txtDom(txt:string){
+        // 为兼容老浏览器（如 chrome <= 75）
+        const dom=document.createElement('span')
+        dom.style.display='inline-block';
+        dom.style.fontWeight=fontWeight
+        dom.style.fontSize=fontSize
+        dom.style.fontFamily=fontFamily
+        dom.innerText=txt
+        dom.style.visibility='hidden'
+        document.body.appendChild(dom)
+        const style=window.getComputedStyle(dom)
+        const size=JSON.parse(JSON.stringify({
+            actualBoundingBoxRight:parseFloat(style.width),
+            actualBoundingBoxDescent:parseFloat(style.height),
+            actualBoundingBoxLeft:0,
+            actualBoundingBoxAscent:0
+        }))
+        document.body.removeChild(dom)
+        return size
+    }
+
+    let txtProp=null
+    if(degraded){
+        txtProp=txtDom(content!)
+    }else{
+        txtProp=setTxtProp(content!)
+    }
+    // console.log(txtProp)
+    // debugger
+    const contWidth=txtProp.actualBoundingBoxRight +txtProp.actualBoundingBoxLeft;
+    const contHeight=txtProp.actualBoundingBoxDescent +txtProp.actualBoundingBoxAscent;
+    const radius=Math.sqrt(Math.pow(contWidth/2,2)+Math.pow(contHeight/2,2)); //圆弧半径（依据文字中心点到最远距离，用勾股定理算出半径）
+    const maxRadius=radius+padding; // 带 padding 的半径
+    const contOffsetX=maxRadius-contWidth/2;
+    const contOffsetY=maxRadius-contHeight/2;
+    const txtX=-maxRadius+contOffsetX+txtProp.actualBoundingBoxLeft;
+    const txtY=-maxRadius+contOffsetY+txtProp.actualBoundingBoxAscent;
+    const originAxis=[
+        [-contWidth/2,-contHeight/2], // 上左
+        [contWidth/2,-contHeight/2], // 上右
+        [contWidth/2,contHeight/2], // 下右
+        [-contWidth/2,contHeight/2] // 下左
+    ];
+    const radian=(rotateDegree??0)*Math.PI/180; // 旋转角度
+    const newAxis=originAxis.map(axis=>{
+        // 获取旋转后的四点新坐标
+        return [
+            axis[0]*Math.cos(radian)-axis[1]*Math.sin(radian),
+            axis[0]*Math.sin(radian)+axis[1]*Math.cos(radian)
+        ]
+    });
+    const clipStartAxis:[number,number]=[
+        Math.min(...newAxis.map(axis=>axis[0]))-padding,
+        Math.min(...newAxis.map(axis=>axis[1]))-padding
+    ];
+    const clipSize=([
+        Math.max(...newAxis.map(axis=>axis[0]))+padding,
+        Math.max(...newAxis.map(axis=>axis[1]))+padding
+    ]).map(value=>value*2) as [number,number];
+
+
+    if(tuning){
+        // 绘制调试层
+        (function tuningLayer(){
+            canvas.width = maxRadius*2+margin;
+            canvas.height = maxRadius*2+margin;
+
+            ctx.globalAlpha=opacity;
+            ctx.translate(maxRadius,maxRadius); // 为旋转设置轴心
+            // 旋转
+            ctx.rotate(radian);
+
+            // text
+            // console.log('text',txtX,txtY)
+            setTxtProp(content!);
+            ctx.fillText(content!,txtX,txtY);
+
+            // 辅助绘制：
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            // 文字背景
+            ctx.beginPath();
+            ctx.strokeRect(-maxRadius+contOffsetX,-maxRadius+contOffsetY,contWidth,contHeight);
+            ctx.closePath();
+
+            // 水平线
+            ctx.setLineDash([5,15])
+            ctx.beginPath();
+            ctx.moveTo(-maxRadius, 0);
+            ctx.lineTo(maxRadius, 0);
+            ctx.closePath();
+            ctx.stroke();
+            
+            ctx.rotate(-radian);
+            ctx.setLineDash([])
+            
+            // 旋转轨道
+            ctx.beginPath();
+            ctx.arc(0, 0, maxRadius-padding, 0, Math.PI*2);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // padding
+            ctx.beginPath();
+            ctx.arc(0, 0, maxRadius, 0, Math.PI*2);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // 矩形区域坐标点
+            newAxis.forEach(axis=>{
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(axis[0], axis[1], 0, 0, Math.PI*2);
+                ctx.closePath();
+                ctx.fill();
+            })
+
+            // 标出裁切区域
+            ctx.beginPath();
+            ctx.strokeRect(...clipStartAxis,...clipSize);
+            ctx.closePath();
+        })();
+    }
+
+    if(needClip){
+        // clip
+        // console.log('newAxis',newAxis,clipStartAxis,clipSize)
+        const imgCopy=ctx.getImageData(...clipStartAxis,...clipSize.map(value=>value+maxRadius) as [number,number]);
+
+        canvas.width = clipSize[0]+margin;
+        canvas.height = clipSize[1]+margin;
+        ctx.putImageData(imgCopy,...clipStartAxis.map(value=>value-(value+maxRadius)) as [number,number]);
+    }
+
+    if(tuning){
+        put(canvas.toDataURL('image/png'),{
+            ...options,
+            name:[options.name,'tuning'].join('-')
+        })
+    }
+
+    return {
+        width: canvas.width,
+        height: canvas.height,
+        contWidth,
+        contHeight,
+        txtProp,
+        fontStyle
+    }
+}
+
+/**
+ * 生成svg水印本体
+ * @param {SketchOptions} sketch 水印草图参数
+ * @returns String 水印base64 dataURL
+ */
+function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
+    let dataURL=''
+    let {x,y}={
+        x:(sketch.width-options.margin)/2-sketch.contWidth/2,
+        y:(sketch.height-options.margin)/2-sketch.contHeight/2
+    }
+    const rotateParams=[
+        options.rotateDegree,
+        x+sketch.contWidth/2,
+        y+sketch.contHeight/2
+    ].join(',')
+    const svg=document.createElement('svg')
+    const text=document.createElement('text')
+
+    // <svg>
+    svg.setAttribute('xmlns','http://www.w3.org/2000/svg')
+    svg.setAttribute('width',`${sketch.width}`)
+    svg.setAttribute('height',`${sketch.height}`)
+    svg.setAttribute('viewBox',`0 0 ${sketch.width} ${sketch.height}`)
+    svg.setAttribute('version','1.1')
+
+    // <text>
+    text.innerText=options.content
+    text.style=[
+        `display: block`,
+        `pointer-events: none`,
+        `font:${sketch.fontStyle}`,
+        `fill:${options.fontColor}`,
+        'block-size: min-content',
+        'text-anchor: start',
+        'text-align: center',
+
+        'transform-origin: top left',
+        `dominant-baseline:${options.baseline}`,
+        `alignment-baseline:${options.baseline}`,
+    ].join('; ');
+    text.setAttribute('x',`${x+sketch.txtProp.actualBoundingBoxLeft}`)
+    text.setAttribute('y',`${y+sketch.txtProp.actualBoundingBoxAscent}`)
+    text.setAttribute('transform',`rotate(${rotateParams})`)
+    text.setAttribute('opacity',`${options.opacity}`)
+
+    if(options.tuning){
+        
+        const boxRect=document.createElement('rect')
+        boxRect.setAttribute('x','0')
+        boxRect.setAttribute('y','0')
+        boxRect.setAttribute('fill','rgba(0,255,0, 0.08)')
+        boxRect.setAttribute('width',`${sketch.width-options.margin}`)
+        boxRect.setAttribute('height',`${sketch.height-options.margin}`)
+        svg.append(boxRect)
+        
+        text.style.outline='1px dotted rgba(0, 0, 255, 0.25)'
+        
+        const contRect=document.createElement('rect')
+        contRect.setAttribute('x',`${x}`)
+        contRect.setAttribute('y',`${y}`)
+        contRect.setAttribute('width',`${sketch.contWidth}`)
+        contRect.setAttribute('height',`${sketch.contHeight}`)
+        contRect.setAttribute('fill','rgba(255,255,0, 0.2)')
+        contRect.setAttribute('stroke','rgba(255,0,0, 0.25)')
+        contRect.setAttribute('transform',`rotate(${rotateParams})`)
+        svg.append(contRect)
+
+        const centralCircle=document.createElement('circle')
+        centralCircle.setAttribute('cx',`${x+sketch.contWidth/2}`)
+        centralCircle.setAttribute('cy',`${y+sketch.contHeight/2}`)
+        centralCircle.setAttribute('r','2.5')
+        centralCircle.setAttribute('fill','rgba(0,0,0, .5)')
+        svg.append(centralCircle)
+    }
+
+    svg.append(text)
+
+    dataURL='data:image/svg+xml;base64,'+window.btoa(unescape(encodeURIComponent(svg.outerHTML)))
+    console.log('svgGenerate',svg,sketch,dataURL)
+    return dataURL
+}
+
+/**
+ * 水印放置
+ * @param {String} imgURL 水印内容，base64
+ * @param {WaterMarkOptions} options 是否为调试模式
+ */
+function put(imgURL:string,options:WaterMarkOptions){
+    let elemID=options.name??''
+    let existElem=document.getElementById(elemID)
+    let elem=null
+    let carrierElem=options.carrierElem;
+    console.warn('put',existElem)
+
+    // 明确水印载体元素
+    if(options.mode==='cover'){
+        // 如果是cover模式，会新建一个层，用来装载水印
+        elem=existElem??document.createElement('div')
+        elem.id=elemID
+        // 并以相对位置设置水印层覆盖在目标上的基础样式
+        elem.style=[
+            elem.style.cssText,
+            'pointer-events:none',
+            'position:absolute',
+            'top:0',
+            'left:0',
+            `z-index:${options.zIndex}`,
+            'width:100%',
+            'height:100%'
+        ].join('!important;');
+    }else{
+        // 如果是mat，水印是直接装载到目标的background上的
+        elem=carrierElem||document.body
+    };
+
+    // 水印载体内容
+    elem.style=[
+        elem.style.cssText,
+        '-webkit-print-color-adjust:exact',
+        'print-color-adjust:exact',
+        'color-adjust:exact',
+        `background-image:url(${imgURL})`, // 水印内容
+        `background-position:${options.position}`,
+        `background-repeat:${options.repeat}`,
+        `background-size:${options.size}`
+        
+    ].join('!important;');
+    
+    // cover模式下将水印层置入目标元素中
+    if(options.mode==='cover'){
+        carrierElem.style.position='relative';
+        if(!existElem){
+            carrierElem.append(elem);
+        }
+    }else{
+
+    }
+}
+
 class WaterMark{
     constructor(options:WaterMarkOptions){
         this.options={...this.options,...options}
@@ -62,6 +384,8 @@ class WaterMark{
         tuning:false,
     }
 
+    put=put
+
     /**
      * 绘制水印
      * @param {WaterMarkOptions} options 配置项，覆盖实例
@@ -71,336 +395,18 @@ class WaterMark{
             ...this.options,
             ...options
         }
-        if(!finalOptions.url&&!finalOptions.content){
+        
+        if(finalOptions.url){
+            this.put(finalOptions.url,finalOptions)
+        }else if(finalOptions.content){
+            const sketch=draft(finalOptions)
+            const svg=svgGenerate(sketch,finalOptions)
+            this.put(svg,finalOptions)
+        }else{
             throw new Error('options.url or options.content is required')
         }
-
-        const sketch=this.draft(finalOptions)
-        const svg=this.svgGenerate(sketch,finalOptions)
-        this.put(svg,finalOptions)
-    }
-    /**
-     * 生成水印草图，svg会据此生成水印
-     * @param {WaterMarkOptions} options 配置项
-     * @returns {SketchOptions} sketch 信息
-     */
-    draft(options:WaterMarkOptions):SketchOptions{
-        const {
-            content,
-            fontWeight,
-            fontSize,
-            fontFamily,
-            fontColor,
-            baseline,
-            rotateDegree,
-            margin,
-            padding,
-            opacity,
-            needClip,
-            tuning,
-            degraded,
-        }=options
-
-        const fontStyle=[fontWeight,fontSize,fontFamily].join(' ')
-        const canvas = document.createElement('canvas'); // 创建canvas元素
-        const ctx:CanvasRenderingContext2D=canvas.getContext('2d')!;
-
-        function setTxtProp(txt:string):TextMetrics{
-            ctx.font=fontStyle;
-            ctx.fillStyle = 'red';
-            ctx.textAlign='start';
-            ctx.textBaseline = 'top';
-            return ctx.measureText(txt);
-        }
-        function txtDom(txt:string){
-            // 为兼容老浏览器（如 chrome <= 75）
-            const dom=document.createElement('span')
-            dom.style.display='inline-block';
-            dom.style.fontWeight=fontWeight
-            dom.style.fontSize=fontSize
-            dom.style.fontFamily=fontFamily
-            dom.innerText=txt
-            dom.style.visibility='hidden'
-            document.body.appendChild(dom)
-            const style=window.getComputedStyle(dom)
-            const size=JSON.parse(JSON.stringify({
-                actualBoundingBoxRight:parseFloat(style.width),
-                actualBoundingBoxDescent:parseFloat(style.height),
-                actualBoundingBoxLeft:0,
-                actualBoundingBoxAscent:0
-            }))
-            document.body.removeChild(dom)
-            return size
-        }
-
-        let txtProp=null
-        if(degraded){
-            txtProp=txtDom(content!)
-        }else{
-            txtProp=setTxtProp(content!)
-        }
-        // console.log(txtProp)
-        // debugger
-        const contWidth=txtProp.actualBoundingBoxRight +txtProp.actualBoundingBoxLeft;
-        const contHeight=txtProp.actualBoundingBoxDescent +txtProp.actualBoundingBoxAscent;
-        const radius=Math.sqrt(Math.pow(contWidth/2,2)+Math.pow(contHeight/2,2)); //圆弧半径（依据文字中心点到最远距离，用勾股定理算出半径）
-        const maxRadius=radius+padding; // 带 padding 的半径
-        const contOffsetX=maxRadius-contWidth/2;
-        const contOffsetY=maxRadius-contHeight/2;
-        const txtX=-maxRadius+contOffsetX+txtProp.actualBoundingBoxLeft;
-        const txtY=-maxRadius+contOffsetY+txtProp.actualBoundingBoxAscent;
-        const originAxis=[
-            [-contWidth/2,-contHeight/2], // 上左
-            [contWidth/2,-contHeight/2], // 上右
-            [contWidth/2,contHeight/2], // 下右
-            [-contWidth/2,contHeight/2] // 下左
-        ];
-        const radian=(rotateDegree??0)*Math.PI/180; // 旋转角度
-        const newAxis=originAxis.map(axis=>{
-            // 获取旋转后的四点新坐标
-            return [
-                axis[0]*Math.cos(radian)-axis[1]*Math.sin(radian),
-                axis[0]*Math.sin(radian)+axis[1]*Math.cos(radian)
-            ]
-        });
-        const clipStartAxis:[number,number]=[
-            Math.min(...newAxis.map(axis=>axis[0]))-padding,
-            Math.min(...newAxis.map(axis=>axis[1]))-padding
-        ];
-        const clipSize=([
-            Math.max(...newAxis.map(axis=>axis[0]))+padding,
-            Math.max(...newAxis.map(axis=>axis[1]))+padding
-        ]).map(value=>value*2) as [number,number];
-
-
-        if(tuning){
-            // 绘制调试层
-            (function tuningLayer(){
-                canvas.width = maxRadius*2+margin;
-                canvas.height = maxRadius*2+margin;
-    
-                ctx.globalAlpha=opacity;
-                ctx.translate(maxRadius,maxRadius); // 为旋转设置轴心
-                // 旋转
-                ctx.rotate(radian);
-    
-                // text
-                // console.log('text',txtX,txtY)
-                setTxtProp(content!);
-                ctx.fillText(content!,txtX,txtY);
-    
-                // 辅助绘制：
-                ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                // 文字背景
-                ctx.beginPath();
-                ctx.strokeRect(-maxRadius+contOffsetX,-maxRadius+contOffsetY,contWidth,contHeight);
-                ctx.closePath();
-    
-                // 水平线
-                ctx.setLineDash([5,15])
-                ctx.beginPath();
-                ctx.moveTo(-maxRadius, 0);
-                ctx.lineTo(maxRadius, 0);
-                ctx.closePath();
-                ctx.stroke();
-                
-                ctx.rotate(-radian);
-                ctx.setLineDash([])
-                
-                // 旋转轨道
-                ctx.beginPath();
-                ctx.arc(0, 0, maxRadius-padding, 0, Math.PI*2);
-                ctx.closePath();
-                ctx.stroke();
-                
-                // padding
-                ctx.beginPath();
-                ctx.arc(0, 0, maxRadius, 0, Math.PI*2);
-                ctx.closePath();
-                ctx.stroke();
-                
-                // 矩形区域坐标点
-                newAxis.forEach(axis=>{
-                    ctx.fillStyle = 'red';
-                    ctx.beginPath();
-                    ctx.arc(axis[0], axis[1], 0, 0, Math.PI*2);
-                    ctx.closePath();
-                    ctx.fill();
-                })
-    
-                // 标出裁切区域
-                ctx.beginPath();
-                ctx.strokeRect(...clipStartAxis,...clipSize);
-                ctx.closePath();
-            })();
-        }
-
-        if(needClip){
-            // clip
-            // console.log('newAxis',newAxis,clipStartAxis,clipSize)
-            const imgCopy=ctx.getImageData(...clipStartAxis,...clipSize.map(value=>value+maxRadius) as [number,number]);
-
-            canvas.width = clipSize[0]+margin;
-            canvas.height = clipSize[1]+margin;
-            ctx.putImageData(imgCopy,...clipStartAxis.map(value=>value-(value+maxRadius)) as [number,number]);
-        }
-
-        if(tuning){
-            this.put(canvas.toDataURL('image/png'),{
-                ...options,
-                name:[options.name,'tuning'].join('-')
-            })
-        }
-
-        return {
-            width: canvas.width,
-            height: canvas.height,
-            contWidth,
-            contHeight,
-            txtProp,
-            fontStyle
-        }
     }
 
-    /**
-     * 生成svg水印本体
-     * @param {SketchOptions} sketch 水印草图参数
-     * @returns String 水印base64 dataURL
-     */
-    svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
-        let dataURL=''
-        let {x,y}={
-            x:(sketch.width-options.margin)/2-sketch.contWidth/2,
-            y:(sketch.height-options.margin)/2-sketch.contHeight/2
-        }
-        const rotateParams=[
-            options.rotateDegree,
-            x+sketch.contWidth/2,
-            y+sketch.contHeight/2
-        ].join(',')
-        const svg=document.createElement('svg')
-        const text=document.createElement('text')
-
-        // <svg>
-        svg.setAttribute('xmlns','http://www.w3.org/2000/svg')
-        svg.setAttribute('width',`${sketch.width}`)
-        svg.setAttribute('height',`${sketch.height}`)
-        svg.setAttribute('viewBox',`0 0 ${sketch.width} ${sketch.height}`)
-        svg.setAttribute('version','1.1')
-
-        // <text>
-        text.innerText=options.content
-        text.style=[
-            `display: block`,
-            `pointer-events: none`,
-            `font:${sketch.fontStyle}`,
-            `fill:${options.fontColor}`,
-            'block-size: min-content',
-            'text-anchor: start',
-            'text-align: center',
-
-            'transform-origin: top left',
-            `dominant-baseline:${options.baseline}`,
-            `alignment-baseline:${options.baseline}`,
-        ].join('; ');
-        text.setAttribute('x',`${x+sketch.txtProp.actualBoundingBoxLeft}`)
-        text.setAttribute('y',`${y+sketch.txtProp.actualBoundingBoxAscent}`)
-        text.setAttribute('transform',`rotate(${rotateParams})`)
-        text.setAttribute('opacity',`${options.opacity}`)
-
-        if(options.tuning){
-            
-            const boxRect=document.createElement('rect')
-            boxRect.setAttribute('x','0')
-            boxRect.setAttribute('y','0')
-            boxRect.setAttribute('fill','rgba(0,255,0, 0.08)')
-            boxRect.setAttribute('width',`${sketch.width-options.margin}`)
-            boxRect.setAttribute('height',`${sketch.height-options.margin}`)
-            svg.append(boxRect)
-            
-            text.style.outline='1px dotted rgba(0, 0, 255, 0.25)'
-            
-            const contRect=document.createElement('rect')
-            contRect.setAttribute('x',`${x}`)
-            contRect.setAttribute('y',`${y}`)
-            contRect.setAttribute('width',`${sketch.contWidth}`)
-            contRect.setAttribute('height',`${sketch.contHeight}`)
-            contRect.setAttribute('fill','rgba(255,255,0, 0.2)')
-            contRect.setAttribute('stroke','rgba(255,0,0, 0.25)')
-            contRect.setAttribute('transform',`rotate(${rotateParams})`)
-            svg.append(contRect)
-
-            const centralCircle=document.createElement('circle')
-            centralCircle.setAttribute('cx',`${x+sketch.contWidth/2}`)
-            centralCircle.setAttribute('cy',`${y+sketch.contHeight/2}`)
-            centralCircle.setAttribute('r','2.5')
-            centralCircle.setAttribute('fill','rgba(0,0,0, .5)')
-            svg.append(centralCircle)
-        }
-
-        svg.append(text)
-
-        dataURL='data:image/svg+xml;base64,'+window.btoa(unescape(encodeURIComponent(svg.outerHTML)))
-        console.log('svgGenerate',svg,sketch,dataURL)
-        return dataURL
-    }
-
-    /**
-     * 水印放置
-     * @param {String} imgURL 水印内容，base64
-     * @param {WaterMarkOptions} options 是否为调试模式
-     */
-    put(imgURL:string,options:WaterMarkOptions){
-        let elemID=options.name??''
-        let existElem=document.getElementById(elemID)
-        let elem=null
-        let carrierElem=options.carrierElem;
-        console.warn('put',existElem)
-
-        // 明确水印载体元素
-        if(options.mode==='cover'){
-            // 如果是cover模式，会新建一个层，用来装载水印
-            elem=existElem??document.createElement('div')
-            elem.id=elemID
-            // 并以相对位置设置水印层覆盖在目标上的基础样式
-            elem.style=[
-                elem.style.cssText,
-                'pointer-events:none',
-                'position:absolute',
-                'top:0',
-                'left:0',
-                `z-index:${options.zIndex}`,
-                'width:100%',
-                'height:100%'
-            ].join('!important;');
-        }else{
-            // 如果是mat，水印是直接装载到目标的background上的
-            elem=carrierElem||document.body
-        };
-
-        // 水印载体内容
-        elem.style=[
-            elem.style.cssText,
-            '-webkit-print-color-adjust:exact',
-            'print-color-adjust:exact',
-            'color-adjust:exact',
-            `background-image:url(${imgURL})`, // 水印内容
-            `background-position:${options.position}`,
-            `background-repeat:${options.repeat}`,
-            `background-size:${options.size}`
-            
-        ].join('!important;');
-        
-        // cover模式下将水印层置入目标元素中
-        if(options.mode==='cover'){
-            carrierElem.style.position='relative';
-            if(!existElem){
-                carrierElem.append(elem);
-            }
-        }else{
-
-        }
-    }
 }
 
 export default WaterMark
