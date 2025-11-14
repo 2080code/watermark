@@ -14,7 +14,6 @@
     .article{
         line-height: 2.1;
         padding: 30px 40px;
-        visibility: hidden;
     }
     h1{
         text-align: center;
@@ -119,22 +118,24 @@
 <p>毕竟不知那呆子凶吉如何，且听下回分解。</p>
     </div>
     
-    <script src="../lib/watermark.min.js"></script>
+    <script src="./watermark.js"></script>
     <script>
         const Watermarker=new WaterMark({
             mode:'cover',
-            content:'西游记',
+            content:'',
+            fontFamily:'Microsoft YaHei',
             fontSize:'60px',
-            // baseline:'middle',
-
+            fontColor:'black',
             opacity:0.15,
             rotateDegree:-30,
-            margin:40,
+            margin:0,
             padding:50,
-            needClip:false
+            needClip:false,
+            position:'center center',
         })
 
         Watermarker.draw({
+            degraded:true,
             tuning:true
         })
 

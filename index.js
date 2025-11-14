@@ -1,3 +1,3 @@
-import watermark from './dist/watermark.js'
+import watermark from './src/watermark.ts'
 
 export default watermark

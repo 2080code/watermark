@@ -2,19 +2,24 @@ import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
 import terser from '@rollup/plugin-terser'
+import typescript from '@rollup/plugin-typescript'
 
 export default {
   input: 'index.js',
-  output: {
+  output: [{
+    file: 'dist/watermark.js',
+    name: 'WaterMark',
+  },{
     file: 'lib/watermark.min.js',
     format: 'umd',
     name: 'WaterMark',
-    compact: true,
-    sourcemap: true
-  },
+    sourcemap: true,
+    plugins: [terser()]
+  }],
   plugins: [
     commonjs(),
     resolve(),
+    typescript(),
     babel({
       babelHelpers: 'bundled',
     //   presets: [
@@ -27,7 +32,6 @@ export default {
     //     }]
     //   ]
     }),
-    terser()
   ]
 
 }

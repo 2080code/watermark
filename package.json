@@ -1,10 +1,11 @@
 {
   "name": "@2080code/watermark",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "基于 CSS 的 background 给HTML元素添加 SVG 文字水印",
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "dev": "rollup -c -w",
     "build": "rollup -c",
     "test": "echo \"Error: no test specified\" && exit 1",
     "npm-publish": "npm run build && npm publish"
@@ -36,6 +37,8 @@
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-terser": "^0.4.4"
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "tslib": "^2.8.1"
   }
 }
