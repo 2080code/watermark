@@ -72,8 +72,18 @@ new WaterMark(options)
 `degraded` | Boolean | `false` | 降级处理，更好的兼容性，默认 `false`。<br/>*canvas 的 `measureText` 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 `getComputedStyle` 取代 canvas `measureText` 来完成基础绘制和尺寸的捕获。*
 
 ## 方法
-### draw(options)
-绘制水印
+### 绘制水印
+在声明实例后，调用 `draw` 方法即可绘制水印，`options`会继承实例的参数，但仍会保留在声明实例时设置的参数。
+最佳实践是多个水印同屏时声明多个实例。
+
+```javascript
+const Watermarker=new WaterMark({
+    content:'西游释厄传'
+})
+Watermarker.draw({
+    content:'西游记'
+})
+```
 
 参数|类型|默认值|说明
 ---|---|---|---

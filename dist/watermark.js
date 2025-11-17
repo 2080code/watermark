@@ -248,10 +248,13 @@ function svgGenerate(sketch, options) {
         svg.append(centralCircle);
     }
     svg.append(text);
-    const svgEncodeString = encodeURIComponent(svg.outerHTML).replace(/%([0-9A-F]{2})/g, function (match, p1) {
-        return String.fromCharCode(+('0x' + p1));
-    });
-    const base64 = window.btoa(svgEncodeString);
+    // const svgEncodeString=encodeURIComponent(svg.outerHTML).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+    //     return String.fromCharCode(+('0x' + p1));
+    // });
+    // const base64=window.btoa(svgEncodeString)
+    const encoder = new TextEncoder();
+    const svgutf8 = encoder.encode(svg.outerHTML);
+    const base64 = window.btoa(String.fromCharCode(...svgutf8));
     dataURL = `data:image/svg+xml;base64,${base64}`;
     // console.log('svgGenerate',sketch,svg,svgEncodeString,dataURL)
     return dataURL;
