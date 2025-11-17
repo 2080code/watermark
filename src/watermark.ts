@@ -68,7 +68,9 @@ function draft(options:WaterMarkOptions):SketchOptions{
     function txtDom(txt:string){
         // 为兼容老浏览器（如 chrome <= 75）
         const dom=document.createElement('span')
-        dom.style.display='inline-block';
+        dom.style.display='block';
+        dom.style.position='absolute';
+        dom.style.lineHeight='1'
         dom.style.fontWeight=fontWeight
         dom.style.fontSize=fontSize
         dom.style.fontFamily=fontFamily
@@ -77,10 +79,10 @@ function draft(options:WaterMarkOptions):SketchOptions{
         document.body.appendChild(dom)
         const style=window.getComputedStyle(dom)
         const size=JSON.parse(JSON.stringify({
-            actualBoundingBoxRight:parseFloat(style.width),
-            actualBoundingBoxDescent:parseFloat(style.height),
+            actualBoundingBoxAscent:0,
             actualBoundingBoxLeft:0,
-            actualBoundingBoxAscent:0
+            actualBoundingBoxDescent:parseFloat(style.height),
+            actualBoundingBoxRight:parseFloat(style.width),
         }))
         document.body.removeChild(dom)
         return size
@@ -293,8 +295,13 @@ function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
 
     svg.append(text)
 
-    dataURL='data:image/svg+xml;base64,'+window.btoa(unescape(encodeURIComponent(svg.outerHTML)))
-    console.log('svgGenerate',svg,sketch,dataURL)
+    const svgEncodeString=encodeURIComponent(svg.outerHTML).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode(+('0x' + p1));
+    });
+    const base64=window.btoa(svgEncodeString)
+    
+    dataURL=`data:image/svg+xml;base64,${base64}`
+    // console.log('svgGenerate',sketch,svg,svgEncodeString,dataURL)
     return dataURL
 }
 
@@ -308,7 +315,7 @@ function put(imgURL:string,options:WaterMarkOptions){
     let existElem=document.getElementById(elemID)
     let elem=null
     let carrierElem=options.carrierElem;
-    console.warn('put',existElem)
+    // console.warn('put',existElem)
 
     // 明确水印载体元素
     if(options.mode==='cover'){
@@ -384,8 +391,6 @@ class WaterMark{
         tuning:false,
     }
 
-    put=put
-
     /**
      * 绘制水印
      * @param {WaterMarkOptions} options 配置项，覆盖实例
@@ -397,11 +402,11 @@ class WaterMark{
         }
         
         if(finalOptions.url){
-            this.put(finalOptions.url,finalOptions)
+            put(finalOptions.url,finalOptions)
         }else if(finalOptions.content){
             const sketch=draft(finalOptions)
             const svg=svgGenerate(sketch,finalOptions)
-            this.put(svg,finalOptions)
+            put(svg,finalOptions)
         }else{
             throw new Error('options.url or options.content is required')
         }

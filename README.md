@@ -17,7 +17,7 @@ import WaterMark from '@2080code/watermark'
 ```
 或
 ```html
-<script src="watermark.js"></script>
+<script src="lib/watermark.min.js"></script>
 ```
 
 ## 使用
@@ -59,7 +59,7 @@ new WaterMark(options)
 `fontWeight` | String | `'normal'` | 字体粗细
 `fontSize` | String | `'16px'` | 字体大小
 `fontColor` | String | `'black'` | 字体颜色
-`baseline` | String | `'before-edge'` | 文本基线设置（svg text alignment-baseline）
+`baseline` | String | `'hanging'` | 文本基线设置（svg text alignment-baseline）
 `rotateDegree` | Number | `0` | 旋转角度
 `size` | String | `'auto'` | 水印尺寸（css background-size）
 `margin` | Number | `0` | 水印之间的外间距
@@ -70,6 +70,14 @@ new WaterMark(options)
 `opacity` | Number | `0.1` | 透明度，同时影响水印及调试层
 `tuning` | Boolean | `false` | 调试模式开关，设为 `true` 会在水印下添加 canvas 画布生成的参照底图，能够观察到 `margin`、`padding`、`rotateDegree`、`baseline` 等参数的辅线，方便调试。<br/>*目前只支持在 cover 模式下开启*
 `degraded` | Boolean | `false` | 降级处理，更好的兼容性，默认 `false`。<br/>*canvas 的 `measureText` 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 `getComputedStyle` 取代 canvas `measureText` 来完成基础绘制和尺寸的捕获。*
+
+## 方法
+### draw(options)
+绘制水印
+
+参数|类型|默认值|说明
+---|---|---|---
+`options` | WaterMarkOptions | `{}` | 绘制选项，同创建实例时相同
 
 
 ## 效果
