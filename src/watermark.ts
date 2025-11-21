@@ -158,7 +158,6 @@ function draft(options:WaterMarkOptions):SketchOptions{
             ctx.lineTo(maxRadius, 0);
             ctx.closePath();
             ctx.stroke();
-            
             ctx.rotate(-radian);
             ctx.setLineDash([])
             
@@ -183,10 +182,13 @@ function draft(options:WaterMarkOptions):SketchOptions{
                 ctx.fill();
             })
 
-            // 标出裁切区域
+            // 标出裁切（needClip）区域
+            ctx.setLineDash([8,4])
             ctx.beginPath();
             ctx.strokeRect(...clipStartAxis,...clipSize);
             ctx.closePath();
+            ctx.setLineDash([]);
+
         })();
     }
 
@@ -264,7 +266,7 @@ function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
     text.setAttribute('opacity',`${options.opacity}`)
 
     if(options.tuning){
-        
+        // svg画布区
         const boxRect=document.createElement('rect')
         boxRect.setAttribute('x','0')
         boxRect.setAttribute('y','0')
@@ -275,6 +277,7 @@ function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
         
         text.style.outline='1px dotted rgba(0, 0, 255, 0.25)'
         
+        // 水印内容矩形框
         const contRect=document.createElement('rect')
         contRect.setAttribute('x',`${x}`)
         contRect.setAttribute('y',`${y}`)
@@ -285,6 +288,7 @@ function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
         contRect.setAttribute('transform',`rotate(${rotateParams})`)
         svg.append(contRect)
 
+        // 水印内容中心点
         const centralCircle=document.createElement('circle')
         centralCircle.setAttribute('cx',`${x+sketch.contWidth/2}`)
         centralCircle.setAttribute('cy',`${y+sketch.contHeight/2}`)
@@ -321,17 +325,15 @@ function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
  * @param {WaterMarkOptions} options 是否为调试模式
  */
 function put(imgURL:string,options:WaterMarkOptions){
-    let elemID=options.name??''
-    let existElem=document.getElementById(elemID)
     let elem=null
     let carrierElem=options.carrierElem;
-    // console.warn('put',existElem)
+    // console.warn('put',elem)
 
     // 明确水印载体元素
     if(options.mode==='cover'){
         // 如果是cover模式，会新建一个层，用来装载水印
-        elem=existElem??document.createElement('div')
-        elem.id=elemID
+        elem=document.createElement('div')
+        elem.className=options.name??''
         // 并以相对位置设置水印层覆盖在目标上的基础样式
         elem.style=[
             elem.style.cssText,
@@ -364,9 +366,7 @@ function put(imgURL:string,options:WaterMarkOptions){
     // cover模式下将水印层置入目标元素中
     if(options.mode==='cover'){
         carrierElem.style.position='relative';
-        if(!existElem){
-            carrierElem.append(elem);
-        }
+        carrierElem.append(elem);
     }else{
 
     }

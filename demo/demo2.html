@@ -12,11 +12,10 @@
         color: #333;
         text-align: center;
     }
-    #picture{
-        max-width: 100%;
-        display:inline-block
-    }
     .picture{
+        max-width: 100%;
+    }
+    .picture img{
         max-width: 100%;
     }
 
@@ -27,25 +26,38 @@
 </head>
 
 <body>
-    <div id="picture">
-        <img class="picture" src="2.jpg" alt="">
+    <div class="picture">
+        <img src="1.jpg" alt="">
+    </div>
+    <div class="picture">
+        <img src="2.jpg" alt="">
     </div>
     
     <script src="../lib/watermark.min.js"></script>
     <script>
         const Watermarker=new WaterMark({
             mode:'cover',
-            carrierElem:document.getElementById('picture'),
-            content:'角落里的水印',
+            content:new Date().toLocaleString(),
             fontSize:'30px',
             opacity:0.25,
-            margin:30,
-            size:'30% auto',
-            position:'right bottom',
+            padding:30,
+            size:'40% auto',
+            position:'top left',
             repeat:'no-repeat',
         })
-
-        Watermarker.draw()
+        document.querySelectorAll('.picture').forEach((el,i)=>{
+            console.log('el',el)
+            if(i===0){
+                Watermarker.draw({
+                    carrierElem:el,
+                    position:'bottom right',
+                })
+            }else{
+                Watermarker.draw({
+                    carrierElem:el,
+                })
+            }
+        })
 
     </script>
 </body>

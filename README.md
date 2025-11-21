@@ -6,14 +6,11 @@
 
 
 ## 介绍
-基于 CSS 的 `background` 给HTML元素添加 SVG 文字水印。
+基于 CSS 的 `background` 给 HTML 元素添加 SVG 文字水印效果。
 
 ## 安装
 ```bash
 npm install @2080code/watermark
-```
-```javascript
-import WaterMark from '@2080code/watermark'
 ```
 或
 ```html
@@ -21,6 +18,9 @@ import WaterMark from '@2080code/watermark'
 ```
 
 ## 使用
+```javascript
+import WaterMark from '@2080code/watermark'
+```
 ```javascript
 // 创建实例
 const Watermarker=new WaterMark({
@@ -49,7 +49,7 @@ new WaterMark(options)
 
 参数|类型|默认值|说明
 ---|---|---|---
-`name` | String | `'2080code-watermark'` | 水印的名称，会影响 cover 模式下水印层元素的 class 命名
+`name` | String | `'2080code-watermark'` | 水印的名称，会影响 cover 模式下水印层元素的 className
 `carrierElem` | HTMLElement | `document.body`| 水印层载体。<br/>*需是可添加子元素的元素*
 `zIndex` | Number | `1000000` | 水印层（css z-index）
 `mode` | String （`'mat'\|'cover'`）| `'mat'` | 水印放置模式，默认 `mat`，铺设在目标层底部；<br/>`cover` 模式会创建一个层，并覆盖在载体上。<br/>*cover 模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失*
@@ -92,7 +92,40 @@ Watermarker.draw({
 
 ## 效果
 ### 生产效果
-![水印效果](./demo/preview1.png)
+![平铺水印](./demo/preview1.png)
+```javascript
+{
+    mode:'cover',
+    content:'西游记',
+    fontSize:'60px',
+    rotateDegree:-30,
+    padding:40,
+    needClip:false
+}
+```
+![水印定位](./demo/preview2.png)
+```javascript
+{
+    mode:'cover',
+    content:new Date().toLocaleString(),
+    fontSize:'30px',
+    opacity:0.25,
+    padding:30,
+    size:'40% auto',
+    position:'top left',
+    repeat:'no-repeat',
+}
+```
 ### 调试效果
-![调试](./demo/preview2.png)
+![调试](./demo/preview_tuning.png)
+```javascript
+{
+    content:'西游释厄传',
+    fontSize:'60px',
+    rotateDegree:-30,
+    margin:30,
+    padding:40,
+    tuning:true
+}
+```
 

@@ -154,10 +154,12 @@ function draft(options) {
                 ctx.closePath();
                 ctx.fill();
             });
-            // 标出裁切区域
+            // 标出裁切（needClip）区域
+            ctx.setLineDash([8, 4]);
             ctx.beginPath();
             ctx.strokeRect(...clipStartAxis, ...clipSize);
             ctx.closePath();
+            ctx.setLineDash([]);
         })();
     }
     if (needClip) {
@@ -223,6 +225,7 @@ function svgGenerate(sketch, options) {
     text.setAttribute('transform', `rotate(${rotateParams})`);
     text.setAttribute('opacity', `${options.opacity}`);
     if (options.tuning) {
+        // svg画布区
         const boxRect = document.createElement('rect');
         boxRect.setAttribute('x', '0');
         boxRect.setAttribute('y', '0');
@@ -231,6 +234,7 @@ function svgGenerate(sketch, options) {
         boxRect.setAttribute('height', `${sketch.height - options.margin}`);
         svg.append(boxRect);
         text.style.outline = '1px dotted rgba(0, 0, 255, 0.25)';
+        // 水印内容矩形框
         const contRect = document.createElement('rect');
         contRect.setAttribute('x', `${x}`);
         contRect.setAttribute('y', `${y}`);
@@ -240,6 +244,7 @@ function svgGenerate(sketch, options) {
         contRect.setAttribute('stroke', 'rgba(255,0,0, 0.25)');
         contRect.setAttribute('transform', `rotate(${rotateParams})`);
         svg.append(contRect);
+        // 水印内容中心点
         const centralCircle = document.createElement('circle');
         centralCircle.setAttribute('cx', `${x + sketch.contWidth / 2}`);
         centralCircle.setAttribute('cy', `${y + sketch.contHeight / 2}`);
@@ -271,16 +276,14 @@ function svgGenerate(sketch, options) {
  */
 function put(imgURL, options) {
     var _a;
-    let elemID = (_a = options.name) !== null && _a !== void 0 ? _a : '';
-    let existElem = document.getElementById(elemID);
     let elem = null;
     let carrierElem = options.carrierElem;
-    // console.warn('put',existElem)
+    // console.warn('put',elem)
     // 明确水印载体元素
     if (options.mode === 'cover') {
         // 如果是cover模式，会新建一个层，用来装载水印
-        elem = existElem !== null && existElem !== void 0 ? existElem : document.createElement('div');
-        elem.id = elemID;
+        elem = document.createElement('div');
+        elem.className = (_a = options.name) !== null && _a !== void 0 ? _a : '';
         // 并以相对位置设置水印层覆盖在目标上的基础样式
         elem.style = [
             elem.style.cssText,
@@ -311,9 +314,7 @@ function put(imgURL, options) {
     // cover模式下将水印层置入目标元素中
     if (options.mode === 'cover') {
         carrierElem.style.position = 'relative';
-        if (!existElem) {
-            carrierElem.append(elem);
-        }
+        carrierElem.append(elem);
     }
 }
 class WaterMark {
