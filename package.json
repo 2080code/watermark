@@ -1,8 +1,8 @@
 {
   "name": "@2080code/watermark",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "基于 CSS 的 background 给HTML元素添加 SVG 文字水印",
-  "main": "index.ts",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "rollup -c -w",

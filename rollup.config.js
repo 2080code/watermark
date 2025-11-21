@@ -5,7 +5,7 @@ import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
 
 export default {
-  input: 'index.ts',
+  input: 'index.js',
   output: [{
     file: 'dist/watermark.js',
     name: 'WaterMark',
