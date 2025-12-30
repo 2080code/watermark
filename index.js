@@ -1,3 +1,5 @@
-import watermark from './src/watermark'
+import WaterMark from './dist/watermark.js'
 
-export default watermark
+export {
+    WaterMark as default
+}

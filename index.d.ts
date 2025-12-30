@@ -1,0 +1,1 @@
+declare module '@2080code/watermark'

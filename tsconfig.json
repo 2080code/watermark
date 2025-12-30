@@ -1,6 +1,7 @@
+
 {
     "include": [
-        "src/**/*",
+        "./src/**/*",
         "rollup.config.js"
     ],
     "compilerOptions": {
@@ -10,5 +11,7 @@
             "es2015",
             "dom"
         ],
+        "removeComments": true,
+        "allowUmdGlobalAccess": true
     }
 }

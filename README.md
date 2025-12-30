@@ -8,6 +8,8 @@
 ## 介绍
 基于 CSS 的 `background` 给 HTML 元素添加 SVG 文字水印效果。
 
+---
+
 ## 安装
 ```bash
 npm install @2080code/watermark
@@ -16,6 +18,8 @@ npm install @2080code/watermark
 ```html
 <script src="lib/watermark.min.js"></script>
 ```
+
+---
 
 ## 使用
 ```javascript
@@ -42,9 +46,11 @@ Watermarker.draw({
 })
 ```
 
-## 参数说明
+---
+
+## 参数
 ```javascript
-new WaterMark(options)
+const Watermarker=new WaterMark(options)
 ```
 
 参数|类型|默认值|说明
@@ -53,7 +59,7 @@ new WaterMark(options)
 `carrierElem` | HTMLElement | `document.body`| 水印层载体。<br/>*需是可添加子元素的元素*
 `zIndex` | Number | `1000000` | 水印层（css z-index）
 `mode` | String （`'mat'\|'cover'`）| `'mat'` | 水印放置模式，默认 `mat`，铺设在目标层底部；<br/>`cover` 模式会创建一个层，并覆盖在载体上。<br/>*cover 模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失*
-`content` | String | `''` | 水印文字内容
+`content` | String | `''` | 水印文字内容，与 `url` 互斥，优先级高于 `url`
 `url` | String | `''` | 水印资源，与 content 互斥<br/>*暂时不支持`margin`、`padding`、`rotateDegree`及字体等相关设置项*
 `fontFamily` | String | `'Hei'` | 字体名
 `fontWeight` | String | `'normal'` | 字体粗细
@@ -71,6 +77,8 @@ new WaterMark(options)
 `tuning` | Boolean | `false` | 调试模式开关，设为 `true` 会在水印下添加 canvas 画布生成的参照底图，能够观察到 `margin`、`padding`、`rotateDegree`、`baseline` 等参数的辅线，方便调试。<br/>*目前只支持在 cover 模式下开启*
 `degraded` | Boolean | `false` | 降级处理，更好的兼容性，默认 `false`。<br/>*canvas 的 `measureText` 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 `getComputedStyle` 取代 canvas `measureText` 来完成基础绘制和尺寸的捕获。*
 
+---
+
 ## 方法
 ### 绘制水印
 在声明实例后，调用 `draw` 方法即可绘制水印，`options`会继承实例的参数，但仍会保留在声明实例时设置的参数。
@@ -87,8 +95,18 @@ Watermarker.draw({
 
 参数|类型|默认值|说明
 ---|---|---|---
-`options` | WaterMarkOptions | `{}` | 绘制选项，同创建实例时相同
+`options` | WaterMarkTypes.WaterMarkOptions | `{}` | 绘制选项，同创建实例时相同
 
+### 获取水印dataURL
+```javascript
+const Watermarker=new WaterMark({
+    content:'吴承恩'
+})
+const dataURL=Watermarker.getDataURL()
+console.log(dataURL)
+```
+
+---
 
 ## 效果
 ### 生产效果

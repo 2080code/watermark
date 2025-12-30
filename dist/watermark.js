@@ -1,44 +1,34 @@
-/**
- * 水印
- * 支持草图调试的水印生成工具
- * @param {Object} options 配置项
- * @param {String} options.name 水印的名称，会影响 cover 模式下水印层元素的 class 命名
- * @param {HTMLElement} options.carrierElem 水印层载体，默认在根元素（body）下
- * @param {Number} options.zIndex 水印层 z-index，默认 1000000
- * @param {String} options.mode mat|cover，放置模式，默认 mat（cover模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失）
- * @param {String} options.content 水印文字内容
- * @param {String} options.url 水印资源，与 content 互斥
- * @param {String} options.fontFamily 字体名
- * @param {String} options.fontWeight 字体粗细
- * @param {String} options.fontSize 字体大小
- * @param {String} options.fontColor 字体颜色
- * @param {String} options.baseline 文本基线设置（svg text alignment-baseline）
- * @param {Number} options.rotateDegree 旋转角度
- * @param {String} options.size 水印尺寸（css background-size）
- * @param {Number} options.margin 水印之间的外间距
- * @param {Number} options.padding 水印之间的内间距
- * @param {Boolean} options.needClip 是否裁切掉空白
- * @param {String} options.position 水印铺设位置（css background-position）
- * @param {String} options.repeat 水印铺设方式（css background-repeat）
- * @param {Number} options.opacity 透明度，同时影响水印及调试层
- * @param {Boolean} options.tuning 调试模式开关，设为 true 会在水印下添加 canvas 画布生成的参照底图，能够观察到 margin、padding、rotateDegree、baseline 等参数的设置效果，方便调试。只支持在 cover 模式下开启。
- * @param {Boolean} options.degraded 降级处理，更好的兼容性。canvas 的 measureText 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 getComputedStyle 取代 canvas measureText 来完成基础绘制和尺寸的捕获。
- * @example
- * // 基本使用
- * const waterMark=new WaterMark({
- *     text:'水印文字',
- * })
- * waterMark.draw()
- */
-/**
- * 生成水印草图，svg会据此生成水印
- * @param {WaterMarkOptions} options 配置项
- * @returns {SketchOptions} sketch 信息
- */
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+function __classPrivateFieldGet(receiver, state, kind, f) {
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+var _WaterMark_instances, _WaterMark_getFinalOptions;
 function draft(options) {
     const { content, fontWeight, fontSize, fontFamily, rotateDegree, margin, padding, opacity, needClip, tuning, degraded, } = options;
     const fontStyle = [fontWeight, fontSize, fontFamily].join(' ');
-    const canvas = document.createElement('canvas'); // 创建canvas元素
+    const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     function setTxtProp(txt) {
         ctx.font = fontStyle;
@@ -48,7 +38,6 @@ function draft(options) {
         return ctx.measureText(txt);
     }
     function txtDom(txt) {
-        // 为兼容老浏览器（如 chrome <= 75）
         const dom = document.createElement('span');
         dom.style.display = 'block';
         dom.style.position = 'absolute';
@@ -76,25 +65,22 @@ function draft(options) {
     else {
         txtProp = setTxtProp(content);
     }
-    // console.log(txtProp)
-    // debugger
     const contWidth = txtProp.actualBoundingBoxRight + txtProp.actualBoundingBoxLeft;
     const contHeight = txtProp.actualBoundingBoxDescent + txtProp.actualBoundingBoxAscent;
-    const radius = Math.sqrt(Math.pow(contWidth / 2, 2) + Math.pow(contHeight / 2, 2)); //圆弧半径（依据文字中心点到最远距离，用勾股定理算出半径）
-    const maxRadius = radius + padding; // 带 padding 的半径
+    const radius = Math.sqrt(Math.pow(contWidth / 2, 2) + Math.pow(contHeight / 2, 2));
+    const maxRadius = radius + padding;
     const contOffsetX = maxRadius - contWidth / 2;
     const contOffsetY = maxRadius - contHeight / 2;
     const txtX = -maxRadius + contOffsetX + txtProp.actualBoundingBoxLeft;
     const txtY = -maxRadius + contOffsetY + txtProp.actualBoundingBoxAscent;
     const originAxis = [
-        [-contWidth / 2, -contHeight / 2], // 上左
-        [contWidth / 2, -contHeight / 2], // 上右
-        [contWidth / 2, contHeight / 2], // 下右
-        [-contWidth / 2, contHeight / 2] // 下左
+        [-contWidth / 2, -contHeight / 2],
+        [contWidth / 2, -contHeight / 2],
+        [contWidth / 2, contHeight / 2],
+        [-contWidth / 2, contHeight / 2]
     ];
-    const radian = (rotateDegree !== null && rotateDegree !== void 0 ? rotateDegree : 0) * Math.PI / 180; // 旋转角度
+    const radian = (rotateDegree !== null && rotateDegree !== void 0 ? rotateDegree : 0) * Math.PI / 180;
     const newAxis = originAxis.map(axis => {
-        // 获取旋转后的四点新坐标
         return [
             axis[0] * Math.cos(radian) - axis[1] * Math.sin(radian),
             axis[0] * Math.sin(radian) + axis[1] * Math.cos(radian)
@@ -107,27 +93,20 @@ function draft(options) {
     const clipSize = ([
         Math.max(...newAxis.map(axis => axis[0])) + padding,
         Math.max(...newAxis.map(axis => axis[1])) + padding
-    ]).map(value => value * 2);
+    ]).map((value) => value * 2);
     if (tuning) {
-        // 绘制调试层
         (function tuningLayer() {
             canvas.width = maxRadius * 2 + margin;
             canvas.height = maxRadius * 2 + margin;
             ctx.globalAlpha = opacity;
-            ctx.translate(maxRadius, maxRadius); // 为旋转设置轴心
-            // 旋转
+            ctx.translate(maxRadius, maxRadius);
             ctx.rotate(radian);
-            // text
-            // console.log('text',txtX,txtY)
             setTxtProp(content);
             ctx.fillText(content, txtX, txtY);
-            // 辅助绘制：
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            // 文字背景
             ctx.beginPath();
             ctx.strokeRect(-maxRadius + contOffsetX, -maxRadius + contOffsetY, contWidth, contHeight);
             ctx.closePath();
-            // 水平线
             ctx.setLineDash([5, 15]);
             ctx.beginPath();
             ctx.moveTo(-maxRadius, 0);
@@ -136,17 +115,14 @@ function draft(options) {
             ctx.stroke();
             ctx.rotate(-radian);
             ctx.setLineDash([]);
-            // 旋转轨道
             ctx.beginPath();
             ctx.arc(0, 0, maxRadius - padding, 0, Math.PI * 2);
             ctx.closePath();
             ctx.stroke();
-            // padding
             ctx.beginPath();
             ctx.arc(0, 0, maxRadius, 0, Math.PI * 2);
             ctx.closePath();
             ctx.stroke();
-            // 矩形区域坐标点
             newAxis.forEach(axis => {
                 ctx.fillStyle = 'red';
                 ctx.beginPath();
@@ -154,7 +130,6 @@ function draft(options) {
                 ctx.closePath();
                 ctx.fill();
             });
-            // 标出裁切（needClip）区域
             ctx.setLineDash([8, 4]);
             ctx.beginPath();
             ctx.strokeRect(...clipStartAxis, ...clipSize);
@@ -163,8 +138,6 @@ function draft(options) {
         })();
     }
     if (needClip) {
-        // clip
-        // console.log('newAxis',newAxis,clipStartAxis,clipSize)
         const imgCopy = ctx.getImageData(...clipStartAxis, ...clipSize.map(value => value + maxRadius));
         canvas.width = clipSize[0] + margin;
         canvas.height = clipSize[1] + margin;
@@ -182,12 +155,7 @@ function draft(options) {
         fontStyle
     };
 }
-/**
- * 生成svg水印本体
- * @param {SketchOptions} sketch 水印草图参数
- * @returns String 水印base64 dataURL
- */
-function svgGenerate(sketch, options) {
+function svgDataURLGenerate(sketch, options) {
     let dataURL = '';
     let { x, y } = {
         x: (sketch.width - options.margin) / 2 - sketch.contWidth / 2,
@@ -200,13 +168,11 @@ function svgGenerate(sketch, options) {
     ].join(',');
     const svg = document.createElement('svg');
     const text = document.createElement('text');
-    // <svg>
     svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     svg.setAttribute('width', `${sketch.width}`);
     svg.setAttribute('height', `${sketch.height}`);
     svg.setAttribute('viewBox', `0 0 ${sketch.width} ${sketch.height}`);
     svg.setAttribute('version', '1.1');
-    // <text>
     text.innerText = options.content;
     text.style = [
         `display: block`,
@@ -225,7 +191,6 @@ function svgGenerate(sketch, options) {
     text.setAttribute('transform', `rotate(${rotateParams})`);
     text.setAttribute('opacity', `${options.opacity}`);
     if (options.tuning) {
-        // svg画布区
         const boxRect = document.createElement('rect');
         boxRect.setAttribute('x', '0');
         boxRect.setAttribute('y', '0');
@@ -234,7 +199,6 @@ function svgGenerate(sketch, options) {
         boxRect.setAttribute('height', `${sketch.height - options.margin}`);
         svg.append(boxRect);
         text.style.outline = '1px dotted rgba(0, 0, 255, 0.25)';
-        // 水印内容矩形框
         const contRect = document.createElement('rect');
         contRect.setAttribute('x', `${x}`);
         contRect.setAttribute('y', `${y}`);
@@ -244,7 +208,6 @@ function svgGenerate(sketch, options) {
         contRect.setAttribute('stroke', 'rgba(255,0,0, 0.25)');
         contRect.setAttribute('transform', `rotate(${rotateParams})`);
         svg.append(contRect);
-        // 水印内容中心点
         const centralCircle = document.createElement('circle');
         centralCircle.setAttribute('cx', `${x + sketch.contWidth / 2}`);
         centralCircle.setAttribute('cy', `${y + sketch.contHeight / 2}`);
@@ -266,25 +229,15 @@ function svgGenerate(sketch, options) {
         base64 = window.btoa(String.fromCharCode(...svgutf8));
     }
     dataURL = `data:image/svg+xml;base64,${base64}`;
-    // console.log('svgGenerate',sketch,svg,svgEncodeString,dataURL)
     return dataURL;
 }
-/**
- * 水印放置
- * @param {String} imgURL 水印内容，base64
- * @param {WaterMarkOptions} options 是否为调试模式
- */
 function put(imgURL, options) {
     var _a;
     let elem = null;
     let carrierElem = options.carrierElem;
-    // console.warn('put',elem)
-    // 明确水印载体元素
     if (options.mode === 'cover') {
-        // 如果是cover模式，会新建一个层，用来装载水印
         elem = document.createElement('div');
         elem.className = (_a = options.name) !== null && _a !== void 0 ? _a : '';
-        // 并以相对位置设置水印层覆盖在目标上的基础样式
         elem.style = [
             elem.style.cssText,
             'pointer-events:none',
@@ -297,21 +250,18 @@ function put(imgURL, options) {
         ].join('!important;');
     }
     else {
-        // 如果是mat，水印是直接装载到目标的background上的
         elem = carrierElem || document.body;
     }
-    // 水印载体内容
     elem.style = [
         elem.style.cssText,
         '-webkit-print-color-adjust:exact',
         'print-color-adjust:exact',
         'color-adjust:exact',
-        `background-image:url(${imgURL})`, // 水印内容
+        `background-image:url(${imgURL})`,
         `background-position:${options.position}`,
         `background-repeat:${options.repeat}`,
         `background-size:${options.size}`
     ].join('!important;');
-    // cover模式下将水印层置入目标元素中
     if (options.mode === 'cover') {
         carrierElem.style.position = 'relative';
         carrierElem.append(elem);
@@ -319,6 +269,7 @@ function put(imgURL, options) {
 }
 class WaterMark {
     constructor(options) {
+        _WaterMark_instances.add(this);
         this.options = {
             name: '2080code-watermark',
             mode: 'mat',
@@ -344,24 +295,33 @@ class WaterMark {
         };
         this.options = Object.assign(Object.assign({}, this.options), options);
     }
-    /**
-     * 绘制水印
-     * @param {WaterMarkOptions} options 配置项，覆盖实例
-     */
-    draw(options) {
-        const finalOptions = Object.assign(Object.assign({}, this.options), options);
-        if (finalOptions.url) {
-            put(finalOptions.url, finalOptions);
-        }
-        else if (finalOptions.content) {
+    getDataURL(options) {
+        const finalOptions = __classPrivateFieldGet(this, _WaterMark_instances, "m", _WaterMark_getFinalOptions).call(this, options);
+        if (finalOptions.content) {
             const sketch = draft(finalOptions);
-            const svg = svgGenerate(sketch, finalOptions);
-            put(svg, finalOptions);
+            return svgDataURLGenerate(sketch, finalOptions);
+        }
+        else {
+            throw new Error('options.content is required');
+        }
+    }
+    draw(options) {
+        const finalOptions = __classPrivateFieldGet(this, _WaterMark_instances, "m", _WaterMark_getFinalOptions).call(this, options);
+        if (finalOptions.content) {
+            const sketch = draft(finalOptions);
+            const svgDataURL = svgDataURLGenerate(sketch, finalOptions);
+            put(svgDataURL, finalOptions);
+        }
+        else if (finalOptions.url) {
+            put(finalOptions.url, finalOptions);
         }
         else {
             throw new Error('options.url or options.content is required');
         }
     }
 }
+_WaterMark_instances = new WeakSet(), _WaterMark_getFinalOptions = function _WaterMark_getFinalOptions(options) {
+    return Object.assign(Object.assign({}, this.options), options);
+};
 
 export { WaterMark as default };

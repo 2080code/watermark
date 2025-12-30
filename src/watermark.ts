@@ -1,45 +1,11 @@
-import { WaterMarkOptions,SketchOptions } from './types'
-
-/**
- * 水印
- * 支持草图调试的水印生成工具
- * @param {Object} options 配置项
- * @param {String} options.name 水印的名称，会影响 cover 模式下水印层元素的 class 命名
- * @param {HTMLElement} options.carrierElem 水印层载体，默认在根元素（body）下
- * @param {Number} options.zIndex 水印层 z-index，默认 1000000
- * @param {String} options.mode mat|cover，放置模式，默认 mat（cover模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失）
- * @param {String} options.content 水印文字内容
- * @param {String} options.url 水印资源，与 content 互斥
- * @param {String} options.fontFamily 字体名
- * @param {String} options.fontWeight 字体粗细
- * @param {String} options.fontSize 字体大小
- * @param {String} options.fontColor 字体颜色
- * @param {String} options.baseline 文本基线设置（svg text alignment-baseline）
- * @param {Number} options.rotateDegree 旋转角度
- * @param {String} options.size 水印尺寸（css background-size）
- * @param {Number} options.margin 水印之间的外间距
- * @param {Number} options.padding 水印之间的内间距
- * @param {Boolean} options.needClip 是否裁切掉空白
- * @param {String} options.position 水印铺设位置（css background-position）
- * @param {String} options.repeat 水印铺设方式（css background-repeat）
- * @param {Number} options.opacity 透明度，同时影响水印及调试层
- * @param {Boolean} options.tuning 调试模式开关，设为 true 会在水印下添加 canvas 画布生成的参照底图，能够观察到 margin、padding、rotateDegree、baseline 等参数的设置效果，方便调试。只支持在 cover 模式下开启。
- * @param {Boolean} options.degraded 降级处理，更好的兼容性。canvas 的 measureText 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 getComputedStyle 取代 canvas measureText 来完成基础绘制和尺寸的捕获。
- * @example
- * // 基本使用
- * const waterMark=new WaterMark({
- *     text:'水印文字',
- * })
- * waterMark.draw()
- */
-
+/// <reference path="./watermark.d.ts" />
 
 /**
  * 生成水印草图，svg会据此生成水印
  * @param {WaterMarkOptions} options 配置项
  * @returns {SketchOptions} sketch 信息
  */
-function draft(options:WaterMarkOptions):SketchOptions{
+function draft(options:WaterMarkTypes.WaterMarkOptions):WaterMarkTypes.SketchOptions{
     const {
         content,
         fontWeight,
@@ -65,7 +31,12 @@ function draft(options:WaterMarkOptions):SketchOptions{
         ctx.textBaseline = 'top';
         return ctx.measureText(txt);
     }
-    function txtDom(txt:string){
+    function txtDom(txt:string):{
+        actualBoundingBoxAscent:number
+        actualBoundingBoxLeft:number
+        actualBoundingBoxDescent:number
+        actualBoundingBoxRight:number
+    }{
         // 为兼容老浏览器（如 chrome <= 75）
         const dom=document.createElement('span')
         dom.style.display='block';
@@ -96,22 +67,27 @@ function draft(options:WaterMarkOptions):SketchOptions{
     }
     // console.log(txtProp)
     // debugger
-    const contWidth=txtProp.actualBoundingBoxRight +txtProp.actualBoundingBoxLeft;
-    const contHeight=txtProp.actualBoundingBoxDescent +txtProp.actualBoundingBoxAscent;
-    const radius=Math.sqrt(Math.pow(contWidth/2,2)+Math.pow(contHeight/2,2)); //圆弧半径（依据文字中心点到最远距离，用勾股定理算出半径）
-    const maxRadius=radius+padding; // 带 padding 的半径
-    const contOffsetX=maxRadius-contWidth/2;
-    const contOffsetY=maxRadius-contHeight/2;
-    const txtX=-maxRadius+contOffsetX+txtProp.actualBoundingBoxLeft;
-    const txtY=-maxRadius+contOffsetY+txtProp.actualBoundingBoxAscent;
-    const originAxis=[
+    const contWidth:number=txtProp.actualBoundingBoxRight +txtProp.actualBoundingBoxLeft;
+    const contHeight:number=txtProp.actualBoundingBoxDescent +txtProp.actualBoundingBoxAscent;
+    const radius:number=Math.sqrt(Math.pow(contWidth/2,2)+Math.pow(contHeight/2,2)); //圆弧半径（依据文字中心点到最远距离，用勾股定理算出半径）
+    const maxRadius:number=radius+padding; // 带 padding 的半径
+    const contOffsetX:number=maxRadius-contWidth/2;
+    const contOffsetY:number=maxRadius-contHeight/2;
+    const txtX:number=-maxRadius+contOffsetX+txtProp.actualBoundingBoxLeft;
+    const txtY:number=-maxRadius+contOffsetY+txtProp.actualBoundingBoxAscent;
+    const originAxis:[
+        [number,number],
+        [number,number],
+        [number,number],
+        [number,number]
+    ]=[
         [-contWidth/2,-contHeight/2], // 上左
         [contWidth/2,-contHeight/2], // 上右
         [contWidth/2,contHeight/2], // 下右
         [-contWidth/2,contHeight/2] // 下左
     ];
-    const radian=(rotateDegree??0)*Math.PI/180; // 旋转角度
-    const newAxis=originAxis.map(axis=>{
+    const radian:number=(rotateDegree??0)*Math.PI/180; // 旋转角度
+    const newAxis:[number,number][] = originAxis.map(axis=>{
         // 获取旋转后的四点新坐标
         return [
             axis[0]*Math.cos(radian)-axis[1]*Math.sin(radian),
@@ -125,7 +101,8 @@ function draft(options:WaterMarkOptions):SketchOptions{
     const clipSize=([
         Math.max(...newAxis.map(axis=>axis[0]))+padding,
         Math.max(...newAxis.map(axis=>axis[1]))+padding
-    ]).map(value=>value*2) as [number,number];
+    ]).map((value)=>value*2) as [number,number];
+
 
 
     if(tuning){
@@ -221,10 +198,10 @@ function draft(options:WaterMarkOptions):SketchOptions{
 
 /**
  * 生成svg水印本体
- * @param {SketchOptions} sketch 水印草图参数
+ * @param {WaterMarkTypes.SketchOptions} sketch 水印草图参数
  * @returns String 水印base64 dataURL
  */
-function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
+function svgDataURLGenerate(sketch:WaterMarkTypes.SketchOptions,options:WaterMarkTypes.WaterMarkOptions):string{
     let dataURL=''
     let {x,y}={
         x:(sketch.width-options.margin)/2-sketch.contWidth/2,
@@ -315,16 +292,16 @@ function svgGenerate(sketch:SketchOptions,options:WaterMarkOptions){
 
     
     dataURL=`data:image/svg+xml;base64,${base64}`
-    // console.log('svgGenerate',sketch,svg,svgEncodeString,dataURL)
+    // console.log('svgDataURLGenerate',sketch,svg,svgEncodeString,dataURL)
     return dataURL
 }
 
 /**
  * 水印放置
  * @param {String} imgURL 水印内容，base64
- * @param {WaterMarkOptions} options 是否为调试模式
+ * @param {WaterMarkTypes.WaterMarkOptions} options 是否为调试模式
  */
-function put(imgURL:string,options:WaterMarkOptions){
+function put(imgURL:string,options:WaterMarkTypes.WaterMarkOptions):void{
     let elem=null
     let carrierElem=options.carrierElem;
     // console.warn('put',elem)
@@ -372,12 +349,40 @@ function put(imgURL:string,options:WaterMarkOptions){
     }
 }
 
-class WaterMark{
-    constructor(options:WaterMarkOptions){
-        this.options={...this.options,...options}
-    }
-
-    options={
+/**
+ * 水印
+ * 支持草图调试的水印生成工具
+ * @param {Object} options 配置项
+ * @param {String} options.name 水印的名称，会影响 cover 模式下水印层元素的 class 命名
+ * @param {HTMLElement} options.carrierElem 水印层载体，默认在根元素（body）下
+ * @param {Number} options.zIndex 水印层 z-index，默认 1000000
+ * @param {'mat'|'cover'} options.mode mat|cover，放置模式，默认 mat（cover模式下为确保水印覆盖到，请检查载体宽高，mat 模式下水印的打印是非强制的，可能丢失）
+ * @param {String} options.content 水印文字内容
+ * @param {String} options.url 水印资源，与 content 互斥
+ * @param {String} options.fontFamily 字体名
+ * @param {String} options.fontWeight 字体粗细
+ * @param {String} options.fontSize 字体大小
+ * @param {String} options.fontColor 字体颜色
+ * @param {String} options.baseline 文本基线设置（svg text alignment-baseline）
+ * @param {Number} options.rotateDegree 旋转角度
+ * @param {String} options.size 水印尺寸（css background-size）
+ * @param {Number} options.margin 水印之间的外间距
+ * @param {Number} options.padding 水印之间的内间距
+ * @param {Boolean} options.needClip 是否裁切掉空白
+ * @param {String} options.position 水印铺设位置（css background-position）
+ * @param {String} options.repeat 水印铺设方式（css background-repeat）
+ * @param {Number} options.opacity 透明度，同时影响水印及调试层
+ * @param {Boolean} options.tuning 调试模式开关，设为 true 会在水印下添加 canvas 画布生成的参照底图，能够观察到 margin、padding、rotateDegree、baseline 等参数的设置效果，方便调试。只支持在 cover 模式下开启。
+ * @param {Boolean} options.degraded 降级处理，更好的兼容性。canvas 的 measureText 本身具有对文字更精确的捕获，但因为兼容性问题，低版本浏览器对它的特性支持不完全，只得以 HTML DOM 的 getComputedStyle 取代 canvas measureText 来完成基础绘制和尺寸的捕获。
+ * @example
+ * // 基本使用
+ * const waterMark=new WaterMark({
+ *     content:'水印文字',
+ * })
+ * waterMark.draw()
+ */
+class WaterMark implements WaterMarkClass {
+    options:WaterMarkTypes.WaterMarkOptions={
         name:'2080code-watermark',
         mode:'mat',
         carrierElem:document.body,
@@ -400,23 +405,44 @@ class WaterMark{
         degraded:false,
         tuning:false,
     }
+    
+    constructor(options:WaterMarkTypes.WaterMarkOptions){
+        this.options={...this.options,...options}
+    }
+
+    #getFinalOptions(options:WaterMarkTypes.WaterMarkOptions):WaterMarkTypes.WaterMarkOptions{
+        return {...this.options,...options}
+    }
+
+    /**
+     * 获取 svg 格式的 dataURL，只有在配置了 content 时才会生成
+     * @param {WaterMarkTypes.WaterMarkOptions} options 配置项
+     * @returns {String} svg 数据 URL
+     */
+    getDataURL(options:WaterMarkTypes.WaterMarkOptions):string{
+
+        const finalOptions=this.#getFinalOptions(options)
+        if(finalOptions.content){
+            const sketch=draft(finalOptions)
+            return svgDataURLGenerate(sketch,finalOptions)
+        }else{
+            throw new Error('options.content is required')
+        }
+    }
 
     /**
      * 绘制水印
-     * @param {WaterMarkOptions} options 配置项，覆盖实例
+     * @param {WaterMarkTypes.WaterMarkOptions} options 配置项，覆盖实例
      */
-    draw(options:WaterMarkOptions){
-        const finalOptions:WaterMarkOptions={
-            ...this.options,
-            ...options
-        }
+    draw(options:WaterMarkTypes.WaterMarkOptions):void{
+        const finalOptions=this.#getFinalOptions(options)
         
-        if(finalOptions.url){
-            put(finalOptions.url,finalOptions)
-        }else if(finalOptions.content){
+        if(finalOptions.content){
             const sketch=draft(finalOptions)
-            const svg=svgGenerate(sketch,finalOptions)
-            put(svg,finalOptions)
+            const svgDataURL=svgDataURLGenerate(sketch,finalOptions)
+            put(svgDataURL,finalOptions)
+        }else if(finalOptions.url){
+            put(finalOptions.url,finalOptions)
         }else{
             throw new Error('options.url or options.content is required')
         }
@@ -424,4 +450,6 @@ class WaterMark{
 
 }
 
-export default WaterMark
+export {
+    WaterMark as default
+}
