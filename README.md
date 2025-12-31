@@ -121,7 +121,7 @@ console.log(dataURL)
     needClip:false
 }
 ```
-![水印定位](./demo/preview2.png)
+![水印定位](./demo/preview2.jpg)
 ```javascript
 {
     mode:'cover',
